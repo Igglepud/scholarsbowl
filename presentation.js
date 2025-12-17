@@ -62,21 +62,22 @@ async function loadPresentationData() {
     }
 }
 
-// Create circular sprite texture for spherical particles
+// Create circular sprite texture for spherical particles with glow
 function createCircleTexture() {
     const canvas = document.createElement('canvas');
-    canvas.width = 32;
-    canvas.height = 32;
+    canvas.width = 64;
+    canvas.height = 64;
     const ctx = canvas.getContext('2d');
     
-    const gradient = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
     gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.4, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.7, 'rgba(255,255,255,0.5)');
-    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.4, 'rgba(200,230,255,0.8)');
+    gradient.addColorStop(0.6, 'rgba(150,200,255,0.4)');
+    gradient.addColorStop(1, 'rgba(100,150,255,0)');
     
     ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 32, 32);
+    ctx.fillRect(0, 0, 64, 64);
     
     const texture = new THREE.CanvasTexture(canvas);
     texture.needsUpdate = true;
@@ -506,37 +507,14 @@ function nextSlide() {
 // Show topic title with particle swarm effect
 function showTopicWithSwarm(topicText, centered = false) {
     const topicTitle = document.getElementById('topic-title');
-    topicTitle.textContent = topicText;
-    
-    // Center if this slide has no bullets
-    if (centered) {
-        topicTitle.classList.add('centered');
-    } else {
-        topicTitle.classList.remove('centered');
-    }
-    
-    // Force opacity to 0 immediately without transition
-    topicTitle.style.transition = 'none';
-    topicTitle.style.opacity = '0';
-    
-    // Re-enable transition after a frame
-    setTimeout(() => {
-        topicTitle.style.transition = 'opacity 3000ms ease';
-    }, 10);
+    // Hide HTML overlay - using particles only
+    topicTitle.style.display = 'none';
     
     // Create temporary particle swarm for the topic
     targetParticleOpacity = 1.0;
     
     // Particles are already exploded from zoom - just form topic immediately
     animationStartTime = Date.now() * 0.001;
-    
-    // Form topic text with particles
-    // Topic CSS: top: -90px, First bullet CSS: top: 300px
-    // Difference: 390px in CSS = 390 * 64/80 = 312 in 3D
-    // First bullet 3D Y: -35, so topic should be at -35 + 312 = 277
-    // For centered topics: use Y=0 (center of screen)
-    const topicYOffset = centered ? 0 : 277;
-    const points = textToParticles(topicText, topicYOffset, false);
     
     // Use the addNewLine function for the topic (line index 0)
     addNewLine(topicText, 0);
