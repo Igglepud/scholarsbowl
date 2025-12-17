@@ -206,8 +206,7 @@ function createTextParticles() {
         opacity: 1,
         sizeAttenuation: true,
         blending: THREE.AdditiveBlending,
-        vertexColors: false,
-        color: 0xffffff,
+        vertexColors: true,
         depthWrite: false,
         map: createCircleTexture()
     });
@@ -389,12 +388,12 @@ function explodeParticles() {
         
         // Calculate direction from center (0,0,0) or current position
         const angle = Math.random() * Math.PI * 2;
-        const speed = 50 + Math.random() * 50; // 3x slower than previous
+        const speed = 300 + Math.random() * 300; // Tripled from 100-200 to 300-600
         
         // Explode outward from current position
         targetPositions[i3] = currentX + Math.cos(angle) * speed;
         targetPositions[i3 + 1] = currentY + Math.sin(angle) * speed;
-        targetPositions[i3 + 2] = currentZ + (Math.random() - 0.5) * 33; // 3x slower
+        targetPositions[i3 + 2] = currentZ + (Math.random() - 0.5) * 200; // Tripled from 66 to ~200
     }
     
     particles.geometry.attributes.targetPosition.needsUpdate = true;
@@ -409,7 +408,7 @@ function updateParticles(deltaTime) {
     const delays = particles.geometry.attributes.delay.array;
     const material = particles.material;
     
-    const smoothing = 0.04; // Slower animation for more visible individual stars
+    const smoothing = 0.02; // Halved from 0.04 to slow down animation by half
     const time = Date.now() * 0.001;
     const elapsed = time - animationStartTime;
     
@@ -594,6 +593,8 @@ function addNewLine(text, lineIndex) {
     // Use the global counter to track which particles to use
     let particleIndex = nextParticleIndex;
     
+    const colors = particles.geometry.attributes.color.array;
+    
     // Assign the new particles
     for (let p = 0; p < points.length && particleIndex < PARTICLE_COUNT; p++, particleIndex++) {
         const i3 = particleIndex * 3;
@@ -603,6 +604,11 @@ function addNewLine(text, lineIndex) {
         targetPositions[i3] = points[p].x;
         targetPositions[i3 + 1] = points[p].y;
         targetPositions[i3 + 2] = points[p].z;
+        
+        // Make text particles glow bright white
+        colors[i3] = 1.0;     // R
+        colors[i3 + 1] = 1.0; // G
+        colors[i3 + 2] = 1.0; // B
     }
     
     // Update the global counter for next call
@@ -610,6 +616,7 @@ function addNewLine(text, lineIndex) {
     
     particles.geometry.attributes.position.needsUpdate = true;
     particles.geometry.attributes.targetPosition.needsUpdate = true;
+    particles.geometry.attributes.color.needsUpdate = true;
 }
 
 // Scatter only the particles that aren't already forming text
