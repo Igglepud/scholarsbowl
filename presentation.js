@@ -8,7 +8,7 @@ let scene, camera, renderer;
 let stars = [];
 let textParticles = [];
 const PARTICLE_COUNT = 50000;
-const BACKGROUND_STARS = 1500;
+const BACKGROUND_STARS = 300;
 
 // Animation state
 let isAnimating = false;
@@ -17,6 +17,7 @@ let particleOpacity = 1.0;
 let targetParticleOpacity = 1.0;
 let isMorphingToFinal = false;
 let animationStartTime = 0;
+let nextParticleIndex = 0; // Track which particles are already assigned
 
 // Initialize the application
 async function init() {
@@ -62,19 +63,22 @@ async function loadPresentationData() {
     }
 }
 
-// Create circular sprite texture for spherical particles with glow
+// Create circular sprite texture for spherical particles with intense glow
 function createCircleTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 64;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
     
-    const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    const center = 32;
+    
+    // Single smooth gradient for clean circular glow
+    const gradient = ctx.createRadialGradient(center, center, 0, center, center, 32);
     gradient.addColorStop(0, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.2, 'rgba(255,255,255,1)');
-    gradient.addColorStop(0.4, 'rgba(200,230,255,0.8)');
-    gradient.addColorStop(0.6, 'rgba(150,200,255,0.4)');
-    gradient.addColorStop(1, 'rgba(100,150,255,0)');
+    gradient.addColorStop(0.15, 'rgba(255,255,255,1)');
+    gradient.addColorStop(0.4, 'rgba(255,255,255,0.6)');
+    gradient.addColorStop(0.7, 'rgba(255,255,255,0.2)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
     
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, 64, 64);
@@ -197,12 +201,13 @@ function createTextParticles() {
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
     
     const material = new THREE.PointsMaterial({
-        size: 5,
+        size: 6,
         transparent: true,
         opacity: 1,
         sizeAttenuation: true,
         blending: THREE.AdditiveBlending,
-        vertexColors: true,
+        vertexColors: false,
+        color: 0xffffff,
         depthWrite: false,
         map: createCircleTexture()
     });
@@ -246,7 +251,7 @@ function textToParticles(text, yOffset = 0, tight = false, fontSize = 70) {
                 // Convert to 3D coordinates
                 const px = (x - canvas.width / 2) * 0.8;
                 const py = (canvas.height / 2 - y) * 0.8 + yOffset;
-                const pz = tight ? -50 : 0; // Bring tight formation slightly forward
+                const pz = tight ? -50 : 0; // Original position
                 points.push({ x: px, y: py, z: pz });
             }
         }
@@ -384,12 +389,12 @@ function explodeParticles() {
         
         // Calculate direction from center (0,0,0) or current position
         const angle = Math.random() * Math.PI * 2;
-        const speed = 3000 + Math.random() * 3000;
+        const speed = 50 + Math.random() * 50; // 3x slower than previous
         
         // Explode outward from current position
         targetPositions[i3] = currentX + Math.cos(angle) * speed;
         targetPositions[i3 + 1] = currentY + Math.sin(angle) * speed;
-        targetPositions[i3 + 2] = currentZ + (Math.random() - 0.5) * 2000;
+        targetPositions[i3 + 2] = currentZ + (Math.random() - 0.5) * 33; // 3x slower
     }
     
     particles.geometry.attributes.targetPosition.needsUpdate = true;
@@ -516,6 +521,9 @@ function showTopicWithSwarm(topicText, centered = false) {
     // Particles are already exploded from zoom - just form topic immediately
     animationStartTime = Date.now() * 0.001;
     
+    // Reset particle assignment counter
+    nextParticleIndex = 0;
+    
     // Use the addNewLine function for the topic (line index 0)
     addNewLine(topicText, 0);
     
@@ -556,19 +564,11 @@ function startBulletSwarm(slide, allTextsToShow, newBulletText, isFirstBullet) {
     // Don't scatter - keep existing particles in place
     targetParticleOpacity = 1.0;
     
-    // If this is the first bullet, we need to show the topic again (it's already there but make sure)
-    // Otherwise just add the new bullet
-    if (isFirstBullet) {
-        // First bullet - topic should already be at line 0 from when currentBullet was -1
-        // Just add the first bullet at line 1
-        const lineIndex = 1;
-        addNewLine(newBulletText, lineIndex);
-    } else {
-        // Subsequent bullets - just add the new one
-        const bulletIndex = allTextsToShow.length - 1;
-        const lineIndex = bulletIndex + 1; // +1 because topic is line 0
-        addNewLine(newBulletText, lineIndex);
-    }
+    // Only add the NEW bullet, don't reform existing text
+    const bulletIndex = allTextsToShow.length - 1;
+    const lineIndex = bulletIndex + 1; // +1 because topic is line 0
+    
+    addNewLine(newBulletText, lineIndex);
     
     // Mark animation as complete after particles arrive
     setTimeout(() => {
@@ -591,39 +591,22 @@ function addNewLine(text, lineIndex) {
     const fontSize = (lineIndex === 0) ? 140 : 70;
     const points = textToParticles(text, yOffset, false, fontSize);
     
-    // Find the first unused particle (count particles already in use)
-    let particleIndex = 0;
-    
-    // Count particles used by previous lines by checking if they're near the screen
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const i3 = i * 3;
-        const dist = Math.sqrt(
-            targetPositions[i3] * targetPositions[i3] + 
-            targetPositions[i3 + 1] * targetPositions[i3 + 1]
-        );
-        if (dist < 2000) { // Particle is already in use (on screen)
-            particleIndex = i + 1;
-        } else {
-            break; // Found first unused particle
-        }
-    }
+    // Use the global counter to track which particles to use
+    let particleIndex = nextParticleIndex;
     
     // Assign the new particles
     for (let p = 0; p < points.length && particleIndex < PARTICLE_COUNT; p++, particleIndex++) {
         const i3 = particleIndex * 3;
         
-        // Start particles off-screen in random positions
-        const angle = Math.random() * Math.PI * 2;
-        const distance = 2000 + Math.random() * 1000;
-        positions[i3] = Math.cos(angle) * distance;
-        positions[i3 + 1] = Math.sin(angle) * distance;
-        positions[i3 + 2] = (Math.random() - 0.5) * 500 - 800;
-        
-        // Set target to text position
+        // Don't move particles to off-screen - they'll move from wherever they currently are
+        // Just set the target position
         targetPositions[i3] = points[p].x;
         targetPositions[i3 + 1] = points[p].y;
         targetPositions[i3 + 2] = points[p].z;
     }
+    
+    // Update the global counter for next call
+    nextParticleIndex = particleIndex;
     
     particles.geometry.attributes.position.needsUpdate = true;
     particles.geometry.attributes.targetPosition.needsUpdate = true;
@@ -739,7 +722,7 @@ function zoomToNextTopic() {
     const endZ = -1000;
     const startRotation = camera.rotation.z;
     const endRotation = startRotation + Math.PI * 2;
-    const duration = 2500;
+    const duration = 5000; // Doubled from 2500 to slow down by half
     const startTime = Date.now();
     
     // Add stars rushing past effect
@@ -766,12 +749,34 @@ function zoomToNextTopic() {
         if (progress < 1) {
             requestAnimationFrame(zoomAnimation);
         } else {
-            // Reset camera and show new slide
-            camera.position.z = 500;
-            camera.rotation.z = 0;
-            material.size = originalSize;
-            isAnimating = false;
-            showCurrentSlide();
+            // Smoothly animate camera back to normal position
+            const resetDuration = 800;
+            const resetStartTime = Date.now();
+            const resetStartZ = camera.position.z;
+            const resetStartRotation = camera.rotation.z;
+            
+            function resetAnimation() {
+                const elapsed = Date.now() - resetStartTime;
+                const progress = Math.min(elapsed / resetDuration, 1);
+                
+                // Ease out
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                camera.position.z = resetStartZ + (500 - resetStartZ) * eased;
+                camera.rotation.z = resetStartRotation + (0 - resetStartRotation) * eased;
+                material.size = originalSize;
+                
+                if (progress < 1) {
+                    requestAnimationFrame(resetAnimation);
+                } else {
+                    camera.position.z = 500;
+                    camera.rotation.z = 0;
+                    isAnimating = false;
+                    showCurrentSlide();
+                }
+            }
+            
+            resetAnimation();
         }
     }
     
