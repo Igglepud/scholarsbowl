@@ -167,6 +167,7 @@ function createTextParticles() {
     const velocities = new Float32Array(PARTICLE_COUNT * 3);
     const delays = new Float32Array(PARTICLE_COUNT); // Animation delay for each particle
     const colors = new Float32Array(PARTICLE_COUNT * 3);
+    const sizes = new Float32Array(PARTICLE_COUNT); // Individual particle sizes
     
     // Initialize particles in random positions
     for (let i = 0; i < PARTICLE_COUNT; i++) {
@@ -190,6 +191,9 @@ function createTextParticles() {
         colors[i3] = 0.7 + Math.random() * 0.3;
         colors[i3 + 1] = 0.8 + Math.random() * 0.2;
         colors[i3 + 2] = 1.0;
+        
+        // Default small size for non-text particles
+        sizes[i] = 3.0;
     }
     
     geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -199,6 +203,7 @@ function createTextParticles() {
     geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
     geometry.setAttribute('delay', new THREE.BufferAttribute(delays, 1));
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
     
     const material = new THREE.PointsMaterial({
         size: 6,
@@ -594,6 +599,7 @@ function addNewLine(text, lineIndex) {
     let particleIndex = nextParticleIndex;
     
     const colors = particles.geometry.attributes.color.array;
+    const sizes = particles.geometry.attributes.size.array;
     
     // Assign the new particles
     for (let p = 0; p < points.length && particleIndex < PARTICLE_COUNT; p++, particleIndex++) {
@@ -605,10 +611,13 @@ function addNewLine(text, lineIndex) {
         targetPositions[i3 + 1] = points[p].y;
         targetPositions[i3 + 2] = points[p].z;
         
-        // Make text particles glow bright white
-        colors[i3] = 1.0;     // R
-        colors[i3 + 1] = 1.0; // G
-        colors[i3 + 2] = 1.0; // B
+        // Make text particles glow MAXIMUM bright - extreme values for intense bloom
+        colors[i3] = 50.0;     // R - maxed out
+        colors[i3 + 1] = 50.0; // G - maxed out
+        colors[i3 + 2] = 50.0; // B - maxed out
+        
+        // Make text particles MUCH larger for intense glow
+        sizes[particleIndex] = 20.0; // Much larger than default 3.0
     }
     
     // Update the global counter for next call
@@ -617,6 +626,7 @@ function addNewLine(text, lineIndex) {
     particles.geometry.attributes.position.needsUpdate = true;
     particles.geometry.attributes.targetPosition.needsUpdate = true;
     particles.geometry.attributes.color.needsUpdate = true;
+    particles.geometry.attributes.size.needsUpdate = true;
 }
 
 // Scatter only the particles that aren't already forming text
