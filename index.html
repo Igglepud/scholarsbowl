@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scholars Bowl Recruitment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            overflow: hidden;
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: white;
+        }
+        
+        canvas {
+            display: block;
+        }
+        
+        #ui {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 100;
+            pointer-events: none;
+        }
+        
+        #instruction {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        #progress {
+            margin-top: 10px;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        #text-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 50;
+            pointer-events: none;
+            width: 90%;
+            max-width: 1200px;
+        }
+        
+        #topic-title {
+            font-size: 96px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            text-shadow: 0 0 40px rgba(100, 200, 255, 1),
+                         0 0 80px rgba(100, 200, 255, 0.9),
+                         0 0 120px rgba(100, 200, 255, 0.7),
+                         4px 4px 8px rgba(0, 0, 0, 0.9);
+            letter-spacing: 5px;
+            opacity: 0;
+            transition: opacity 3000ms ease;
+            position: absolute;
+            width: 100%;
+            top: -90px;
+        }
+        
+        #topic-title.centered {
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        #text-content {
+            position: relative;
+            height: 600px;
+        }
+        
+        .text-line {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            font-size: 48px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            text-shadow: 0 0 20px rgba(100, 200, 255, 0.8),
+                         0 0 40px rgba(100, 200, 255, 0.5),
+                         2px 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 3px;
+        }
+        
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            color: white;
+            z-index: 200;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading" id="loading">Loading the cosmos...</div>
+    
+    <div id="text-overlay">
+        <div id="topic-title"></div>
+        <div id="text-content"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/loaders/FontLoader.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/geometries/TextGeometry.js"></script>
+    <script src="presentation.js?v=1734396200"></script>
+</body>
+</html>
